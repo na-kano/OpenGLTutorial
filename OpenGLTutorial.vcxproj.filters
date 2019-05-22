@@ -25,6 +25,12 @@
     <None Include="Res\Simple.frag">
       <Filter>リソース ファイル</Filter>
     </None>
+    <None Include="Res\FragmentLighting.vert">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="Res\FragmentLighting.frag">
+      <Filter>リソース ファイル</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\GLFWEW.h">
@@ -34,6 +40,9 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="Src\Texture.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>
@@ -55,5 +64,10 @@
     <Image Include="Res\House.TGA">
       <Filter>リソース ファイル</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="OpenGLTutorial.rc">
+      <Filter>リソース ファイル</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

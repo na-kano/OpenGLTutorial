@@ -1,5 +1,5 @@
 /*
-*@file Simple.flag
+*@file Simple.frag
 */
 
 #version 410

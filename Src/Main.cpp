@@ -232,7 +232,7 @@ int main()
 	const GLuint shaderProgram =
 		Shader::BuildFromFile("Res/Simple.vert", "Res/Simple.frag");
 	const GLuint progLighting =
-		Shader::BuildFromFile("Res/VertexLighting.vert", "Res/Simple.frag");
+		Shader::BuildFromFile("Res/FragmentLighting.vert", "Res/FragmentLighting.frag");
 	if (!vbo || !ibo || !vao || !shaderProgram || !progLighting)
 	{
 		return 1;
@@ -263,9 +263,16 @@ int main()
 		glGetUniformLocation(progLighting, "pointLight.position");
 	const GLint locPointLightCol =
 		glGetUniformLocation(progLighting, "pointLight.color");
+	const GLint locSpotLightDir =
+		glGetUniformLocation(progLighting, "spotLight.dirAntCutOff");
+	const GLint locSpotLightPos =
+		glGetUniformLocation(progLighting, "spotLight.posAndInnerCutOff");
+	const GLint locSpotlightCol =
+		glGetUniformLocation(progLighting,"spotLight.color");
 
 	if (locDirLightDir < 0 || locDirLightCol < 0 || locAmbLightCol < 0 ||
-		locPointLightPos <0 || locPointLightCol < 0)
+		locPointLightPos <0 || locPointLightCol < 0 ||
+		locSpotLightDir <0 || locSpotLightPos <0||locSpotlightCol<0)
 	{
 		std::cerr << "ERROR: uniform変数の位置を取得できません。\n";
 		return 1;
@@ -309,14 +316,21 @@ int main()
 	pointLightPos[0] = glm::vec3(5, 4, 0);
 	pointLightCol[0] = glm::vec3(1.0f, 0.8f, 0.4f) * 100.0f;
 
+	glm::vec4 spotLightDirAndCutOff[4] = {};
+	glm::vec4 spotLightPosAndInnerCutOff[4] = {};
+	glm::vec4 spotLightCol[4] = {};
+	const glm::vec3 tmpSpotLightDir = glm::normalize(glm::vec3(-1, -2, -2));
+	spotLightDirAndCutOff[0] = glm::vec4(tmpSpotLightDir, std::cos(glm::radians(20.0f)));
+	spotLightPosAndInnerCutOff[0] = glm::vec4(-6, 6, 8, std::cos(glm::radians(15.0f));
+	spotLightCol[0] = glm::vec3(0.4f, 0.8f, 1.0f)*200.0f;
+
 	//メインループ
+	window.InitTimer();
 	while (!window.ShoudClose())
 	{
-		while (!window.ShoudClose())
-		{
-			window.UpdateTimer();
-			const float deltaTime = (float)window.DeltaTime();
-		}
+		window.UpdateTimer();
+		const float deltaTime = (float)window.DeltaTime();
+	
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_CULL_FACE);
 
@@ -339,6 +353,7 @@ int main()
 		glUniform3fv(locDirLightDir, 1, &dirLightDir.x);
 		glUniform3fv(locDirLightCol, 1, &dirLightCol.x);
 		glUniform3fv(locPointLightCol, 8, &pointLightCol[0].x);
+		glUniform3fv(locSpotlightCol, 4, &spotLightCol[0].x);
 
 		glBindVertexArray(vao);
 
@@ -358,8 +373,9 @@ int main()
 			glUniformMatrix4fv(locMatMVP, 1, GL_FALSE, &matMVP[0][0]);
 
 			//指向性ライトの向きをモデル座標系に変換してGPUメモリに転送する
+			const glm::mat3 matInvRotate = glm::inverse(glm::mat3(matModelR));
 			const glm::vec3 dirLightDirOnModel =
-				glm::inverse(glm::mat3(matModelR))*dirLightDir;
+				matInvRotate*dirLightDir;
 			glUniform3fv(locDirLightDir, 1, &dirLightDirOnModel.x);
 
 			//ポイント・ライトの位置をモデル座標系に変換してGPUメモリに転送する
@@ -370,6 +386,21 @@ int main()
 				pointLightPosOnModel[i] = matInvModel * glm::vec4(pointLightPos[i], 1);
 			}
 			glUniform3fv(locPointLightPos, 8, &pointLightPosOnModel[0].x);
+
+			//スポットライトの方向と位置モデル座標系に変換してGPUメモリに転送する
+			glm::vec4 spotLightDirOnModel[4];
+			glm::vec3 spotLightPosOnModel[4];
+			for (int i = 0; i < 4; ++i)
+			{
+				const glm::vec3 invDir = matInvRotate * glm::vec3(spotLightDirAndCutOff[i]);
+				spotLightDirOnModel[i] = glm::vec4(invDir, spotLightDirAndCutOff[i].w);
+				const glm::vec3 pos = glm::vec3(spotLightPosAndInnerCutOff[i]);
+				spotLightPosOnModel[i] = matInvModel * glm::vec4(pos, 1);
+				spotLightPosOnmodel[i].w = spotLightPosAndInnerCutOff[i].w;
+			}
+			glUniform3fv(locSpotLightDir, 4, &spotLightDirOnModel[0].x);
+			glUniform3fv(locSpotLightPos, 4, &spotLightPosOnModel[0].x);
+
 
 			glDrawElementsBaseVertex(meshList[0].mode, meshList[0].count,
 				GL_UNSIGNED_SHORT, meshList[0].indices, meshList[0].baseVertex);
